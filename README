@@ -15,11 +15,11 @@ Requirements
 
 
 
-SETUP - Create initial directories
+SETUP
 
   python pipe_ngs.py -setup
 
-Creates the following defaults are created in the home directory:
+Creates a default working directory (& initial sub-directories) within the home directory:
 
   ~/ngs_pipe
       /ref.gen
@@ -29,7 +29,7 @@ N.B.  An alternative working directory &/or path to the working directory can be
 
 
 
-INDEX - Index reference genome
+INDEX
 
 
   python pipe_ngs.py -index
