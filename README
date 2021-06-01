@@ -1,0 +1,61 @@
+READ ME (TBC)
+
+This software helps facilitate the processing of ngs data on a SLURM cluster according to parameters commonly used by Levi Yant's lab.
+
+
+Requirements
+  
+  - python 3.7.3; os, sys, operator, time, argparse, subprocess, re, collections, statistics, itertools
+  - trimmomatic 0.39
+  - picard 2.21.1
+  - bwa 0.7.17
+  - samtools 1.9
+  - gatk4 4.1.4.0
+  - vcftools 0.1.16
+
+
+
+SETUP - Create initial directories
+
+  python pipe_ngs.py -setup
+
+Creates the following defaults are created in the home directory:
+
+  ~/ngs_pipe
+      /ref.gen
+      /00.fastqs
+
+N.B.  An alternative working directory &/or path to the working directory can be specified via the -d & -p flags respectively (see below).
+
+
+
+INDEX - Index reference genome
+
+
+  python pipe_ngs.py -index
+
+
+Indexes the reference genome fasta file placed within the /ref.gen directory.
+
+
+
+
+PROCESS NGS DATA
+
+Sequentially processes fastqs placed within 
+
+  python pipe_ngs.py -stage <number>
+
+
+Stage   Description         In                  Out
+
+1       Merge fastqs        00.fastqs           01.merged
+2       Trim reads          01.merged           02.trimmed
+3       Map reads           02.trimmed          03.mapped
+4       Mark duplicates     03.mapped           04.marked
+5       Call haplotypes     04.marked           05.haplotyped
+6       Combine sample      05.marked           06.combined
+7       Genotype samples    06.combined         07.genotyped
+8       Re-combine parts    07.genotyped        08.recombined
+9       Filter sites        08.recombined       09.filtered.best
+10      Filter depth        09.filtered.best    10.filtered.depth
