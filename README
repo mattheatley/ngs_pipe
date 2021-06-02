@@ -85,7 +85,7 @@ N.B. Single/paired-end reads will be processed differently according to read typ
 
 ADDITIONAL SETTINGS
 
-  Flag                  Default             Description
+  Flag                    Default             Description
 
   -pa <partition>         stage-specific      specify SLURM partition
   -no <nodes>             stage-specific      specify SLURM nodes
