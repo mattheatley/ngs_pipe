@@ -17,45 +17,72 @@ Requirements
 
 SETUP
 
-  python pipe_ngs.py -setup
+Create the initial working directory (default: $HOME/ngs_pipe) & sub-directories.
 
-Creates a default working directory (& initial sub-directories) within the home directory:
+  python pipe_ngs.py -setup [-p </path/to>] [-d <directory_name>]
 
-  ~/ngs_pipe
-      /ref.gen
-      /00.fastqs
 
-N.B.  An alternative working directory &/or path to the working directory can be specified via the -d & -p flags respectively (see below).
+
+PREPARE FILES
+
+Move input files to the relevant sub-directories as follows:
+
+  /ref.gen
+    genome.fasta
+    
+  /00.fastqs
+    /Sample_1
+      Reads_1.fastq.gz
+      Reads_2.fastq.gz
+    /Sample_2
+      Reads.fastq.gz
+      ...
 
 
 
 INDEX
 
+Index reference genome.
 
   python pipe_ngs.py -index
 
 
-Indexes the reference genome fasta file placed within the /ref.gen directory.
+
+PROCESS DATA
+
+Sequentially processes ngs data.
+
+  python pipe_ngs.py -stage <number> [-x <ploidy>]
+
+
+  Stage   Description
+
+  1       Merge fastqs
+  2       Trim reads
+  3       Map reads
+  4       Mark duplicates
+  5       Call haplotypes
+  6       Combine sample
+  7       Genotype samples
+  8       Re-combine parts
+  9       Filter sites
+  10      Filter depth
 
 
 
+ADDITIONAL SETTINGS
 
-PROCESS NGS DATA
+  Flag                Description
 
-Sequentially processes fastqs placed within 
+  -pa <partition>       specify SLURM partition
+  -no <nodes>           specify SLURM nodes
+  -nt <ntasks>          specify SLURM ntasks
+  -me <memory[units]>   specify SLURM memory
+  -wt <HH:MM:SS>        specify SLURM walltime
+ 
+  -review               review SLURM accounting data for tasks (i.e. -stage <number> -review)
 
-  python pipe_ngs.py -stage <number>
-
-
-Stage   Description         In                  Out
-
-1       Merge fastqs        00.fastqs           01.merged
-2       Trim reads          01.merged           02.trimmed
-3       Map reads           02.trimmed          03.mapped
-4       Mark duplicates     03.mapped           04.marked
-5       Call haplotypes     04.marked           05.haplotyped
-6       Combine sample      05.marked           06.combined
-7       Genotype samples    06.combined         07.genotyped
-8       Re-combine parts    07.genotyped        08.recombined
-9       Filter sites        08.recombined       09.filtered.best
-10      Filter depth        09.filtered.best    10.filtered.depth
+  -sb                   activate Sub Buddy; automatically re-submits any tasks stuck with 'failed' in NODELIST(REASON) 
+  
+  
+  
