@@ -41,7 +41,7 @@ Move input files to the relevant sub-directories as follows:
       Reads.fastq.gz
       ...
 
-N.B. Read type (single/paired-end) is automatically assigned depending on whether or not ALL sample fastqs can be asigned a read pair member.
+N.B. Read type (single/paired-end) is automatically assigned depending on whether or not ALL sample fastqs can be assigned a read pair member.
      At present only novogene read have been tested but it might work with similar naming conventions.
 
 
