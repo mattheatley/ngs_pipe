@@ -3,6 +3,7 @@ READ ME (TBC)
 This software helps facilitate the processing of ngs data on a SLURM cluster according to parameters commonly used by Levi Yant's lab.
 
 
+
 Requirements
   
   - python 3.7.3; os, sys, operator, time, argparse, subprocess, re, collections, statistics, itertools
@@ -12,6 +13,8 @@ Requirements
   - samtools 1.9
   - gatk4 4.1.4.0
   - vcftools 0.1.16
+
+N.B. can be installed within a conda environment (see below).
 
 
 
@@ -37,6 +40,9 @@ Move input files to the relevant sub-directories as follows:
     /Sample_2
       Reads.fastq.gz
       ...
+
+N.B. both single & paried-end reads are supported but only the novogene read names have been tested. 
+Read type will be auto-detected with single/paired-end reads processed differently between stages 1-3.
 
 
 
@@ -68,21 +74,26 @@ Sequentially processes ngs data.
   9       Filter sites
   10      Filter depth
 
+N.B. ploidy only needs to be specified when calling haplotypes at stage 5.
+
 
 
 ADDITIONAL SETTINGS
 
-  Flag                Description
+  Flag                  Default             Description
 
-  -pa <partition>       specify SLURM partition
-  -no <nodes>           specify SLURM nodes
-  -nt <ntasks>          specify SLURM ntasks
-  -me <memory[units]>   specify SLURM memory
-  -wt <HH:MM:SS>        specify SLURM walltime
+  -pa <partition>       stage-specific      specify SLURM partition
+  -no <nodes>           stage-specific      specify SLURM nodes
+  -nt <ntasks>          stage-specific      specify SLURM ntasks
+  -me <memory[units]>   stage-specific      specify SLURM memory
+  -wt <HH:MM:SS>        stage-specific      specify SLURM walltime
  
-  -review               review SLURM accounting data for tasks (i.e. -stage <number> -review)
-
-  -sb                   activate Sub Buddy; automatically re-submits any tasks stuck with 'failed' in NODELIST(REASON) 
+  -u                    current user        specify SLURM user name
+  -m                    None                specify email address to receive SLURM notifications
+  -e <environment>      ngs_env             specify conda environment with software installed 
+  -l <limit>            100                 specify task submission limit i.e. how many tasks can be submitted at once
   
-  
+  -review                                   review task SLURM accounting data for specified stage (i.e. -stage <number> [-x <ploidy>] -review)
+  -pipe                                     submit pipeline itself as a task; automatically submits tasks from the hpcc up to the task submission limit
+  -sb                                       activate sub buddy; automatically re-submits any stuck tasks i.e. with 'failed' in NODELIST(REASON)
   
