@@ -14,7 +14,7 @@ Requirements
   - gatk4 4.1.4.0
   - vcftools 0.1.16
 
-N.B. can be installed within a conda environment (see below).
+N.B. Software can be installed within a conda environment (see below).
 
 
 
@@ -41,8 +41,8 @@ Move input files to the relevant sub-directories as follows:
       Reads.fastq.gz
       ...
 
-N.B. both single & paried-end reads are supported but only the novogene read names have been tested. 
-Read type will be auto-detected with single/paired-end reads processed differently between stages 1-3.
+N.B. Read type (single/paired-end) is automatically assigned depending on whether or not ALL sample fastqs can be asigned a read pair member.
+     At present only novogene read have been tested but it might work with similar naming conventions.
 
 
 
@@ -74,7 +74,8 @@ Sequentially processes ngs data.
   9       Filter sites
   10      Filter depth
 
-N.B. ploidy only needs to be specified when calling haplotypes at stage 5.
+N.B. Single/paired-end reads will be processed differently between stages 1-3.
+     Ploidy only needs to be specified when calling haplotypes at stage 5.
 
 
 
