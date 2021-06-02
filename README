@@ -42,7 +42,7 @@ Move reference genome & single/paired-end fastqs to the relevant sub-directories
       ...
 
 N.B. Read type is automatically assigned depending on whether or not ALL fastqs can be assigned a pair member.
-     At present only novogene read have been tested but it might work with similar naming conventions.
+     At present only novogene reads have been tested but other naming conventions may also work.
 
 
 
