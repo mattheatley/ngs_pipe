@@ -78,7 +78,7 @@ Sequentially processes ngs data.
   9       Filter sites
   10      Filter depth
 
-N.B. Single/paired-end reads will be processed differently as appropriate between stages 1-3.
+N.B. Single/paired-end reads will be processed differently according to read type between stages 1-3.
      Ploidy only needs to be specified when calling haplotypes at stage 5.
 
 
