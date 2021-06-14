@@ -306,7 +306,7 @@ else: # proceed with alternative pipeline mode
                         f'-R {fasta_file} \\\n'+ # reference genome (fasta)
                         f'-I {seq_file} \\\n'+ # input (BAM; marked)
                         f'-O {vcf} \\\n'+ # output (gVCF; raw SNPs/indel calls)
-                        f'-bamout {bam} \\\n'+ # output (bam; raw SNPs/indel calls)
+                        #f'-bamout {bam} \\\n'+ # output (bam; raw SNPs/indel calls)
                         '--emit-ref-confidence BP_RESOLUTION \\\n'+ # emit reference confidence scores site by site
                         f'--sample-ploidy {ploidy} \\\n'+ # sample ploidy (or pooled sample number)
                         '--min-base-quality-score 25 \\\n'+ # minimum base quality to be considered for calling
