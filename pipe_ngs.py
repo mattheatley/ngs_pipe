@@ -6,9 +6,7 @@ import os, sys, operator, time, argparse, subprocess, re, collections, statistic
 from core import CAPTURE, SBATCH, REVIEW, ezSub
 
 pipe_script = os.path.realpath(__file__)
-pipe_dir, pipe_name = os.path.split(pipe_script)
-pipe_flag = '-pipe'
-buddy_script = f'{pipe_dir}/sub_buddy.py'
+buddy_script = f'{os.path.dirname(pipe_script)}/sub_buddy.py'
 
 parser = argparse.ArgumentParser(description='Next Generation Sequencing Pipe', prog=os.path.basename(__file__), usage='%(prog)s [options]', epilog='see the readme file for further details')
 
@@ -17,10 +15,10 @@ modes.add_argument('-setup', action='store_true', help='setup initial directorie
 modes.add_argument('-index', action='store_true', help='index reference genome')
 modes.add_argument('-stage', metavar='<number>', dest='stage', type=int, choices=range(1,15), help='specify processing stage')
 
-checks = parser.add_argument_group(description='additional modes:') # check modes
-checks.add_argument(pipe_flag, action='store_true', help='submit pipe as task')
-checks.add_argument('-review', action='store_true', help='review task accounting data')
-checks.add_argument('-test', action='store_true', help='test script locally')
+additional = parser.add_argument_group(description='additional modes:') # additional modes
+additional.add_argument('-pipe', action='store_true', help='submit pipe as task')
+additional.add_argument('-review', action='store_true', help='review task accounting data')
+additional.add_argument('-test', action='store_true', help='test script locally')
 
 inputs = parser.add_argument_group(description='user inputs:') # user inputs
 inputs.add_argument('-u', metavar='<name>', type=str, help='specify user name')
@@ -47,6 +45,8 @@ if walltime and (len(walltime) != 8 or walltime[2:6:3].count(':') != 2 or not wa
 
 if stage == 5 and not ploidy: parser.error(f"the argument -x is required for stage {stage}") # check required input
 if stage != 5 and ploidy: parser.error(f"the argument -x is not required for stage {stage}") # check required input
+
+(pipe_flag, *_), *_ = [ info.option_strings for info in additional._group_actions ] # extract pipe flag
 
 def FindSupplementaryFile(relevant_stage, alt_suffix=None): # find required files
     search_dir = f'{wrk_dir}/{stage_formats[relevant_stage][directory_name]}' 
