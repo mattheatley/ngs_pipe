@@ -14,17 +14,16 @@ Requirements
   - gatk4 4.1.4.0
   - vcftools 0.1.16
 
-N.B. Software can be installed within a conda environment (see below).
+N.B. Software can be installed within a conda environment & the environment name supplied at stages (see below).
 
 
 
 SETUP
 
-Create the initial working directory/sub-directories.
+Create the initial default/user-specified working & sub-directories.
 
   python pipe_ngs.py -setup [-p </path/to>] [-d <directory_name>]
 
-N.B. Working path/directory name are optional (see below). 
 
 
 
@@ -78,8 +77,8 @@ Sequentially processes ngs data.
   9       Filter sites
   10      Filter depth
 
-N.B. Single/paired-end reads will be processed differently according to read type between stages 1-3.
-     Ploidy only needs to be specified when calling haplotypes at stage 5.
+N.B. Single/paired-end reads will be processed according to inferred read type between stages 1-3.
+     Ploidy only needs to be specified at stage 5.
 
 
 
