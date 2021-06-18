@@ -14,7 +14,7 @@ Requirements
   - gatk4 4.1.4.0
   - vcftools 0.1.16
 
-N.B. Software can be installed within a conda environment & the environment name supplied at stages (see below).
+N.B. If software is installed within a conda environment the environment name must be supplied at each stage (see below).
 
 
 
