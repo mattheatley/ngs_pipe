@@ -14,7 +14,8 @@ Requirements
   - gatk4 4.1.4.0
   - vcftools 0.1.16
 
-N.B. If software is installed within a conda environment the environment name must be supplied at each stage (see below).
+N.B.
+ If software is installed within a conda environment the environment name must be supplied at each stage (see below).
 
 
 
@@ -44,8 +45,9 @@ i.e.
       Reads.fastq.gz
       ...
 
-N.B. Read type is automatically assigned depending on whether or not ALL fastqs can be assigned a pair member.
-     At present only novogene reads have been tested but similar naming conventions should also work.
+N.B. 
+ Read type is automatically assigned depending on whether or not ALL fastqs can be assigned a pair member.
+ At present only novogene reads have been tested but similar naming conventions should also work.
 
 
 
@@ -77,8 +79,9 @@ Sequentially processes ngs data.
   9       Filter sites
   10      Filter depth
 
-N.B. Single/paired-end reads will be processed according to inferred read type between stages 1-3.
-     Ploidy only needs to be specified at stage 5.
+N.B. 
+ Single/paired-end reads will be processed according to inferred read type between stages 1-3.
+ Ploidy only needs to be specified at stage 5.
 
 
 
