@@ -97,9 +97,9 @@ ADDITIONAL SETTINGS
   -u <user_name>          current user        specify SLURM user name
   -m <email_address>      None                specify email address to receive SLURM notifications
   -e <environment_name>   ngs_env             specify conda environment with software installed 
-  -l <limit>              100                 specify task submission limit i.e. how many tasks can be submitted at once
+  -l <limit>              100                 specify concurrent task submission limit
   
-  -review                                   review task SLURM accounting data for a specific stage (i.e. -stage <number> [-x <ploidy>] -review)
-  -pipe                                     submit pipeline as a task itself; automatically submits tasks up to the submission limit from the hpcc
-  -sb                                       activate sub buddy; automatically re-submits any stalled tasks (i.e. 'failed' within the NODELIST(REASON) description)
+  -review                                     review stage SLURM accounting data for tasks (i.e. -stage <number> -review)
+  -pipe                                       submit pipeline itself; submits new tasks up to the limit from the hpcc
+  -sb                                         activate sub buddy; automatically re-submits any stalled tasks
   
