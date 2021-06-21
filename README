@@ -102,7 +102,7 @@ ADDITIONAL SETTINGS
   -e <environment_name>   ngs_env             specify conda environment with software installed 
   -l <limit>              100                 specify concurrent task submission limit
   
-  -review                                     review stage SLURM accounting data for tasks (i.e. -stage <number> -review)
+  -review                                     review stage SLURM accounting data i.e. -stage <number> -review
   -pipe                                       submit pipeline itself; submits new tasks up to the limit from the hpcc
   -sb                                         activate sub buddy; automatically re-submits any stalled tasks
   
