@@ -208,7 +208,7 @@ else: # proceed with alternative pipeline mode
 
                         raw_suffixes = '|'.join([ re.escape(suffix) for suffix in stage_info[in_suffix] ]) # specify regex search pattern
                         *_, P, U = S,  *PU  = ['S','P','U'] # specify read identifiers
-                        files_by_member = { member: [ name for name in files if re.search(f'_({member})[{P}]?({raw_suffixes})$', name) ] for member in [1,2] } # categorise by read pair member if present
+                        files_by_member = { member: [ name for name in files if re.search(f'_[R]?({member})[{P}]?({raw_suffixes})$', name) ] for member in [1,2] } # categorise by read pair member if present
                         
                         all_reads_assigned_member = set(itertools.chain(*files_by_member.values())).issuperset(files) # establish if all reads belong to members
                         read_pairs_found = all(files_by_member.values()) and all_reads_assigned_member if stage == 1 else all(files_by_member.values()) # check that both members of read pair present & all reads allocated a member
