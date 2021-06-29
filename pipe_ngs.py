@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # CONDA ENV SOFTWARE: python (3.7), trimmomatic (v0.39), picard (v2.21.1), bwa (v0.7.17), samtools (v1.9), gatk4 (v4.1.4.0), vcftools (v0.1.16)
 
-import os, sys, operator, time, argparse, subprocess, re, collections, statistics, itertools # required modules
-from core import CAPTURE, SBATCH, REVIEW, ezSub
+import os, sys, operator, time, argparse, subprocess, re, collections, statistics, itertools # required modules
+from core import CAPTURE, SBATCH, REVIEW, ezSub, FindSupplementaryFile, JoinNeatly
 
 pipe_script = os.path.realpath(__file__)
 buddy_script = f'{os.path.dirname(pipe_script)}/sub_buddy.py'
@@ -48,20 +48,6 @@ if stage != 5 and ploidy: parser.error(f"the argument -x is not required for sta
 
 (pipe_flag, *_), *_ = [ info.option_strings for info in additional._group_actions ] # extract pipe flag
 
-def FindSupplementaryFile(relevant_stage, alt_suffix=None): # find required files
-    search_dir = f'{wrk_dir}/{stage_formats[relevant_stage][directory_name]}' 
-    assert(os.path.isdir(search_dir)), f'Problem finding the directory \"{search_dir}\" when searching for supplementary files.'
-    search_suffix = alt_suffix if alt_suffix else stage_formats[relevant_stage][in_suffix] # specify optional alternative search suffix
-    found_files = [ found.path for found in os.scandir(search_dir) if found.name.endswith(search_suffix) ]
-    assert(len(found_files) == 1), f'{"Multiple" if found_files else "No"} files found in \"{search_dir}\" ending with {join_neatly(search_suffix)}.'
-    found_file, *_ = found_files
-    return found_file
-
-def join_neatly(to_join):
-    *leading, trailing = [f'\"{info}\"' for info in to_join]
-    if leading: leading, *_ = [(", ").join(leading)] if len(leading) > 1 else leading # join by commas if relevant
-    return f'either {leading} or {trailing}' if leading else trailing # join by & if relevant
-
 def SplitRegions(region_list):
     if len(region_list) < 50: # when less than 50 scaffolds process each seperately
         grouped = [ [info] for info in region_list ]
@@ -72,7 +58,7 @@ def SplitRegions(region_list):
                 block.append(info) # group scaffolds into blocks no more than 50 M BP
             else: 
                 grouped.append([]) # create new block
-                *_, block = grouped # reset block variable
+                *_, block = grouped # reset block variable
                 block.append(info) # stored region info in new block
     return [ list(scaffolds) for scaffolds,*_ in [zip(*regions) for regions in grouped] ] # extract scaffold names
 
@@ -90,14 +76,14 @@ stage_formats = { # stage-specific formatting
     9: [ '08.recombined',      ('.vcf.gz',),                    ('filtered.biallelic.vcf.gz','filtered.best.vcf.gz','filtered') ],
    10: [ '09.filtered.best',   ('best.vcf.gz','.ldepth'),       ('depth.mask.vcf.gz','filtered.F3.vcf.gz','filtered.F4.vcf.gz') ],
    11: [ '10.filtered.depth'  ]}
-stage_formats = { key:  {label:info for label,info in zip(category_labels,value)} for key,value in stage_formats.items() } # creatre subdictionaries
+stage_formats = { key:  {label:info for label,info in zip(category_labels,value)} for key,value in stage_formats.items() } # creatre subdictionaries
 
 resource_labels = 'partition','nodes','ntasks-per-node', 'memory', 'walltime' # specify subdictionary labels
 hpcc_settings = { # default hpcc settings 
   'i': ['defq','1','1','8g', '24:00:00'],   1: ['defq','1','1','4g' ,'24:00:00'],   2: ['defq','1','1','4g', '24:00:00'],   3: ['defq','1','1','32g','48:00:00'],  4: ['defq','1','1','32g','24:00:00'],
     5: ['defq','1','1','64g','96:00:00'],   6: ['defq','1','1','64g','96:00:00'],   7: ['defq','1','1','64g','96:00:00'],   8: ['defq','1','1','32g','48:00:00'],  9: ['defq','1','1','32g','24:00:00'],  
    10: ['defq','1','1','32g','24:00:00'], '+': ['defq','1','1','4g','168:00:00'] }
-hpcc_settings = { key:  {label:info for label,info in zip(resource_labels,value)} for key,value in hpcc_settings.items() } # creatre subdictionaries
+hpcc_settings = { key:  {label:info for label,info in zip(resource_labels,value)} for key,value in hpcc_settings.items() } # creatre subdictionaries
 
 print(f'\n{"SETUP" if setup else f"REVIEWING " if reviewing else "SUBMITTING " if stage else ""}{"INDEXING REFERENCE GENOME" if indexing else f"STAGE {stage} TASKS" if stage else ""}\n')
 
@@ -109,7 +95,7 @@ if setup:
     initial_dirs = [ f'{wrk_dir}/{subdict[directory_name]}' for key,subdict in stage_formats.items() if str(key).isalpha() or key <= 1] # extract initial directory names
     [ os.makedirs(path, exist_ok=True) for path in initial_dirs ]; print('SETUP COMPLETE\n'); exit() # create initial directories
 
-else: # proceed with alternative pipeline mode    
+else: # proceed with alternative pipeline mode    
     assert(os.path.exists(wrk_dir)), f'Problem finding the working directory "{wrk_dir}".'# check path exists
     assert(environment in CAPTURE('conda info --env')), f'Problem finding the conda environment "{environment}".' # check conda environment exists
 
@@ -125,7 +111,7 @@ else: # proceed with alternative pipeline mode
         if not os.path.exists(id_file): print(error_no_files.format(f'\"{id_file}\"')) # check id file exists
         else: REVIEW(id_file) # review task accounting data via job ids
 
-    else: # proceed with indexing or stage
+    else: # proceed with indexing or stage
         [ os.makedirs(stage_dir, exist_ok=True) for stage_dir in stage_dirs ] # make stage-specific directories as required
         
         hpcc_settings[relevant].update({ label:setting for label,setting in zip(resource_labels, hpcc_overides) if setting }) # update hpcc settings as required
@@ -137,11 +123,12 @@ else: # proceed with alternative pipeline mode
 
         if indexing or stage >= 2: # find supplementary files
             print('\nFINDING SUPPLEMENTARY FILES...')
-            fasta_file = FindSupplementaryFile(relevant_stage='i') # find reference genome
+            ref_dir = f'{wrk_dir}/{stage_formats["i"][directory_name]}' 
+            fasta_file = FindSupplementaryFile(search_dir=ref_dir, search_suffix=stage_formats['i'][in_suffix] ) # find reference genome
             if indexing:
                 if not fasta_file.endswith('.fasta'): # check suffix appropriate for GATK
                     print('\tRENAMING REFERENCE GENOME')
-                    fasta_prefix, *_ = fasta_file.rsplit('.', 1) # extract reference prefix
+                    fasta_prefix, *_ = fasta_file.rsplit('.', 1) # extract reference prefix
                     new_fasta_file = f'{fasta_prefix}.fasta' # specify new file name
                     os.rename(fasta_file,new_fasta_file) # rename original file
                     fasta_file = new_fasta_file # update reference genome variable
@@ -154,7 +141,7 @@ else: # proceed with alternative pipeline mode
                     if response == 'n': print('\nOk but you\'ve been warned.\n')
                     if response == 'y': print('\nExiting.\n'); sys.exit(0)
             if stage == 7: 
-                fai_file = FindSupplementaryFile(relevant_stage='i', alt_suffix=('.fai',)) # find regions file
+                fai_file = FindSupplementaryFile(search_dir=ref_dir, search_suffix=('.fai',)) # find regions file
             print('\tSUPPLEMENTARY FILES FOUND!')
 
 
@@ -164,7 +151,7 @@ else: # proceed with alternative pipeline mode
             print('\nFINDING TASK FILES...')
             assert(os.path.isdir(in_dir)), f'Problem finding the input directory \"{in_dir}\".'
             identified_inputs = [ (root,files) for root,*_,files in os.walk(in_dir, topdown=False) if any(name.endswith(stage_info[in_suffix]) for name in files) ] # find relevant inputs   
-            assert(identified_inputs), f'No files found in \"{in_dir}\" ending with {join_neatly(stage_info[in_suffix])}.'
+            assert(identified_inputs), f'No files found in \"{in_dir}\" ending with {JoinNeatly(stage_info[in_suffix])}.'
             if 'vcf' in stage_info[in_suffix]: 
                 accompanied_by_indexes = [ files for *_,files in identified_inputs if not any(name.endswith('.tbi') for name in files) ] # find vcf files without accompanying tbi fil
                 assert(accompanied_by_indexes), 'Not all vcf files are accompanied by ".tbi" indexes.' # check index file (TBI) exists (i.e. previous stage completed)
@@ -192,11 +179,11 @@ else: # proceed with alternative pipeline mode
                 if stage < 9:
                     sample = f'part{i:02}' if stage == 7 else os.path.basename(in_subdir) # specify sample
                     out_subdir = f'{out_dir}/{sample}' # specify output sub directory
-                    os.makedirs(out_subdir, exist_ok=True) # make output sub directories
+                    os.makedirs(out_subdir, exist_ok=True) # make output sub directories
             
             task_id = tool if indexing else 'merging' if 'combine' in out_dir else 'filtering' if 'filter' in out_dir else sample # specify task id
             
-            if ploidy: task_id += f'-{ploidy}x' # specify task id ploidy info
+            if ploidy: task_id += f'-{ploidy}x' # specify task id ploidy info
 
             sh_file = f'{sh_dir}/{task_id}.sh' # specify sh file
             
@@ -204,7 +191,7 @@ else: # proceed with alternative pipeline mode
 
             with open(sh_file, 'w') as sh:
                         
-                hpcc_directives = SBATCH(job_id=task_id, partition=partition, nodes=nodes, ntasks=ntasks, memory=memory, walltime=walltime, out_err=oe_dir, conda_env=environment) # specify hpcc directives (slurm)
+                hpcc_directives = SBATCH(job_id=task_id, partition=partition, nodes=nodes, ntasks=ntasks, memory=memory, walltime=walltime, out_err=oe_dir, conda_env=environment) # specify hpcc directives (slurm)
                 sh.write(hpcc_directives)                
 
                 sh.write('echo TASK STARTED `date`\n') # log start time
@@ -244,8 +231,8 @@ else: # proceed with alternative pipeline mode
                                 sh.write(f'cat {in_reads} > {out_reads}\n') # merging seperate reads 
                         
                         else: # process reads as appropriate
-                            relevant_members = [1,2] if read_pairs_found else [S] # specify relevant read members
-                            in_reads = ' '.join([ relevant_reads[member].pop()  for member in relevant_members ]) # extract & organise read files
+                            relevant_members = [1,2] if read_pairs_found else [S] # specify relevant read members
+                            in_reads = ' '.join([ relevant_reads[member].pop()  for member in relevant_members ]) # extract & organise read files
 
 
                             # STAGE 2   01.merged --> 02.trimmed
@@ -253,7 +240,7 @@ else: # proceed with alternative pipeline mode
                             if stage == 2:
                                 
                                 identifiers = [ f'{member}{identifier}' for member in relevant_members for identifier in PU ] if read_pairs_found else relevant_members # specify relevant read labels
-                                out_reads = ' '.join([ f'{out_subdir}/{sample}_{identifier}.{stage_info[out_suffix]}' for identifier in identifiers ]) # specify output files
+                                out_reads = ' '.join([ f'{out_subdir}/{sample}_{identifier}.{stage_info[out_suffix]}' for identifier in identifiers ]) # specify output files
                                 mode = 'PE' if read_pairs_found else 'SE'# specify relevant software mode                            
                                 sh.write(f'trimmomatic {mode} -phred33 {in_reads} {out_reads} ' # use phred+33 quality scores
                                 'LEADING:10 '+ # cut bases at start if quality below 10 
@@ -423,10 +410,10 @@ else: # proceed with alternative pipeline mode
             buddy_found = int(CAPTURE(f'squeue -u {user} | grep -c "{buddy_name}"')) > 0
 
             if buddy_found: print('\nSUB BUDDY ALREADY RUNNING FOR CURRENT STAGE')
-            else: # submit sub buddy
+            else: # submit sub buddy
                 with open(f'{sh_file}', 'w') as sh: 
                     partition, nodes, ntasks, memory, walltime = resources = [  hpcc_settings['+'][label] for label in resource_labels ] # extract hpcc settings
-                    hpcc_directives = SBATCH(job_id=buddy_name, partition=partition, nodes=nodes, ntasks=ntasks, memory=memory, walltime=walltime, out_err=oe_dir, email=address) # specify hpcc directives (slurm)
+                    hpcc_directives = SBATCH(job_id=buddy_name, partition=partition, nodes=nodes, ntasks=ntasks, memory=memory, walltime=walltime, out_err=oe_dir, email=address) # specify hpcc directives (slurm)
                     sh.write(f'{hpcc_directives}\n'+
                     'echo BUDDY CALLED `date`\n'+
                     f'python {buddy_script} -u {user} -i {id_file}\n')
@@ -442,25 +429,24 @@ else: # proceed with alternative pipeline mode
                 pipe_description = f'pipe-{relevant}'
                 sh_script = f'{sh_dir}/{pipe_description}.sh'
                 with open(sh_script, 'w') as sh:  
-                    hpcc_directives = SBATCH(job_id=pipe_description, partition=partition, nodes=nodes, ntasks=ntasks, memory=memory, walltime=walltime, out_err=oe_dir, conda_env=environment) # specify hpcc directives (slurm)
+                    hpcc_directives = SBATCH(job_id=pipe_description, partition=partition, nodes=nodes, ntasks=ntasks, memory=memory, walltime=walltime, out_err=oe_dir, conda_env=environment) # specify hpcc directives (slurm)
                     sh.write(hpcc_directives)                
-                    arguments.remove(pipe_flag) # remove self submission flag
+                    arguments.remove(pipe_flag) # remove self submission flag
                     print('python', pipe_script, *arguments, sep=' ', file=sh) # submit self as task
                 pipe_id = CAPTURE(f'sbatch {sh_script}')
                 print(f'\nPIPELINE SUBMITTED ({pipe_id})\n')
             
-            else: # submit tasks
+            else: # submit tasks
 
                 *_, final_stage, final_stage_output = all_stages = list(stage_formats) # extract final stage keys
                 next_stage = all_stages[all_stages.index(relevant)+1] # extract next stage key
-                final_stage = stage == final_stage # check if last stage
+                final_stage = stage == final_stage # check if last stage
 
                 print('\nSUBMITTING TASKS...')                    
                 with open(id_file, 'a+') as id_output:
                     for i,script in enumerate(scripts,1): 
-                        ezSub(i=i, user=user, limit=limit) # maintain tasks below parellel task limit
-                        sub_id = CAPTURE(f'sbatch -d singleton {script}') # submit task
+                        ezSub(i=i, check=600, user=user, limit=limit) # maintain tasks below parellel task limit
+                        sub_id = CAPTURE(f'sbatch -d singleton {script}') # submit task
                         if os.path.basename(script).startswith('buddy'): continue
                         else: print(sub_id, script, sep='\t', file=id_output, flush=True) # record task job id & shell script
                 print('\tALL TASKS SUBMITTED\n')
-                
