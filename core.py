@@ -13,11 +13,11 @@ def SBATCH(job_id, partition, nodes, ntasks, memory, walltime, out_err, task=Non
     return '#!/bin/bash\n'+f'{sbatch}\n'+'echo RUNNING ON `hostname`\n'
 
 
-def ezSub(i, user, limit): # auto submission
+def ezSub(i, check, user, limit): # auto submission
     total = int(CAPTURE(f'squeue -u {user} -h | wc -l')) # find current tasks
     if total > limit: 
         print(f'\nSUBMISSION LIMIT REACHED: WAITING TO SUBMIT TASK {i}...')
-        time.sleep(60)
+        time.sleep(check)
         ezSub(i, user, limit) # check every 5 mins if task can be submitted
     else: 
         return # submit task (with dependancy) if possible
@@ -59,3 +59,17 @@ def REVIEW(id_file):
                         resub_id = CAPTURE(f'sbatch {script_file}') # resubmit task
                         print(resub_id, script_file, '(RESUBMITTED)', sep='\t', file=id_update) # record resubmitted id
         print('\nREVIEW COMPLETE\n')
+
+
+def FindSupplementaryFile(search_dir, search_suffix): # find required files
+    assert(os.path.isdir(search_dir)), f'Problem finding the directory \"{search_dir}\" when searching for supplementary files.'
+    found_files = [ found.path for found in os.scandir(search_dir) if found.name.endswith(search_suffix) ]
+    assert(len(found_files) == 1), f'{"Multiple" if found_files else "No"} files found in \"{search_dir}\" ending with {JoinNeatly(search_suffix)}.'
+    found_file, *_ = found_files
+    return found_file
+
+
+def JoinNeatly(to_join):
+    *leading, trailing = [f'\"{info}\"' for info in to_join]
+    if leading: leading, *_ = [(", ").join(leading)] if len(leading) > 1 else leading # join by commas if relevant
+    return f'either {leading} or {trailing}' if leading else trailing # join by & if relevant
