@@ -41,7 +41,7 @@ setup, indexing, stage, submitting_self, reviewing, testing, user, path, wrk_dir
 
 *_, memory, walltime = hpcc_overides # define hpcc overides
 if memory and (sum(memory.count(unit) for unit in ['k','m','g','t']) != 1 or not memory.rstrip('kmgt').isdigit()): parser.error(f"argument -me: invalid str format: '{memory}'") # check memory format
-if walltime and (len(walltime) != 8 or walltime[2:6:3].count(':') != 2 or not walltime.replace(':','').isdigit()): parser.error(f"argument -wt: invalid str format: '{walltime}'") # check walltime format
+if walltime and ( not 8 <= len(walltime) <= 9 or walltime[-6:-2:3].count(':') != 2 or not walltime.replace(':','').isdigit()): parser.error(f"argument -wt: invalid str format: '{walltime}'") # check walltime format
 
 if stage == 5 and not ploidy: parser.error(f"the argument -x is required for stage {stage}") # check required input
 if stage != 5 and ploidy: parser.error(f"the argument -x is not required for stage {stage}") # check required input
