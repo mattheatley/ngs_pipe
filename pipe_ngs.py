@@ -104,7 +104,7 @@ else: # proceed with alternative pipeline mode
     stage_info, next_stage_info = operator.itemgetter(relevant, relevant if indexing else relevant+1)(stage_formats) # specify stage formats
     batch_labels = [ f'x.slurm/{"pipe" if submitting_self else "index" if indexing else f"stage.{stage:02}"}/{label}' for label in ['scripts','out.err','ids'] ] # specify batch formats        
     
-    *_, out_dir, sh_dir, oe_dir, id_dir = in_dir, *stage_dirs = [ f'{wrk_dir}/{label}' for label in [stage_info[directory_name], next_stage_info[directory_name], *batch_labels] ] # specify stage directories
+    *_, sh_dir, oe_dir, id_dir = in_dir, out_dir, *stage_dirs = [ f'{wrk_dir}/{label}' for label in [stage_info[directory_name], next_stage_info[directory_name], *batch_labels] ] # specify stage directories
     id_file = f'{id_dir}/task.ids' # specify slurm id file
 
     if reviewing: # review task accounting data
@@ -168,7 +168,9 @@ else: # proceed with alternative pipeline mode
         scripts = []
         paired, single = categories = ['paired','single']
         processing_mode = { category:[] for category in categories }
-        
+
+        single_output_stages = [6,8,9,10]
+
         for i,task in enumerate(to_process, 1):
             
             if indexing: tool, *_ = task.split(' ', 1) # extract software name from command
@@ -179,7 +181,7 @@ else: # proceed with alternative pipeline mode
                 if stage < 9:
                     sample = f'part{i:02}' if stage == 7 else os.path.basename(in_subdir) # specify sample
                     out_subdir = f'{out_dir}/{sample}' # specify output sub directory
-                    os.makedirs(out_subdir, exist_ok=True) # make output sub directories
+                    #os.makedirs(out_subdir, exist_ok=True) # make output sub directories
             
             task_id = tool if indexing else 'merging' if 'combine' in out_dir else 'filtering' if 'filter' in out_dir else sample # specify task id
             
@@ -196,6 +198,12 @@ else: # proceed with alternative pipeline mode
 
                 sh.write('echo TASK STARTED `date`\n') # log start time
 
+                task_dir = out_dir if stage in single_output_stages else out_subdir
+
+                sh.write(
+                    f'rm -rf {task_dir}\n'+
+                    f'mkdir -p {task_dir}\n'
+                    )
 
                 # INDEX     ref.gen
                 
@@ -257,7 +265,8 @@ else: # proceed with alternative pipeline mode
                                 sh.write(f'bwa mem -t10 {fasta_file} {in_reads} > {aligned}\n'+ # align 70-bp to 1-Mbp query sequences via BWA-MEM algorithm with 10 threads in paired-end mode
                                 f'samtools view -bS {aligned} | samtools sort -T {sample} > {organised}\n'+ # sort alignments by chromosomal coordinates with @HD-SO tag; writes temporary files to PREFIX.nnnn.bam
                                 f'samtools index {organised}\n'+ # index sorted BAM for fast random access
-                                f'samtools flagstat {organised} > {stats}\n') # calculate BAM QC statistics
+                                f'samtools flagstat {organised} > {stats}\n'+ # calculate BAM QC statistics
+                                f'rm {aligned}\n') # delete intermediary sam
 
 
                     # STAGE 4   03.mapped --> 04.marked
