@@ -198,18 +198,18 @@ else: # proceed with alternative pipeline mode
 
                 sh.write('echo TASK STARTED `date`\n') # log start time
 
-                task_dir = out_dir if stage in single_output_stages else out_subdir
-
-                sh.write(
-                    f'rm -rf {task_dir}\n'+
-                    f'mkdir -p {task_dir}\n'
-                    )
-
                 # INDEX     ref.gen
                 
                 if indexing: sh.write(f'{task} {fasta_file}\n') # index FASTA reference sequence
                 else:
 
+                    task_dir = out_dir if stage in single_output_stages else out_subdir
+
+                    sh.write(
+                        f'rm -rf {task_dir}\n'+
+                        f'mkdir -p {task_dir}\n'
+                        )
+                
                 # CHECK READ TYPE
 
                     if stage <= 3:
