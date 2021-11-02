@@ -157,7 +157,7 @@ else: # proceed with alternative pipeline mode
                 assert(accompanied_by_indexes), 'Not all vcf files are accompanied by ".tbi" indexes.' # check index file (TBI) exists (i.e. previous stage completed)
 
             file_to_process, *_ = files_to_process = sorted([ (root, [ f'{root}/{name}' for name in files if name.endswith(stage_info[in_suffix]) ]) for root,files in identified_inputs ]) # filter relevant files 
-
+            
             if stage == 7: # genomic region to process
                 regions_info = [ (scaffold,length) for scaffold,length,*_ in [line.split('\t') for line in open(fai_file, 'r').readlines()] ] # extract scaffolds
                 regions_to_process = SplitRegions(region_list=regions_info) # group scaffolds into manageable parts (i.e. single scaffolds or groups of less than 50,000,000 bp)      
@@ -177,7 +177,7 @@ else: # proceed with alternative pipeline mode
 
             elif stage != 6 and stage != 8: # not required for stages 6 & 8 nor indexing
                 *_, (*_, seq_file) = in_subdir, files = file_to_process if stage > 6 else task # specify input subdirectories & files
-                                        
+
                 if stage < 9:
                     sample = f'part{i:02}' if stage == 7 else os.path.basename(in_subdir) # specify sample
                     out_subdir = f'{out_dir}/{sample}' # specify output sub directory
@@ -209,7 +209,7 @@ else: # proceed with alternative pipeline mode
                         f'rm -rf {task_dir}\n'+
                         f'mkdir -p {task_dir}\n'
                         )
-                
+
                 # CHECK READ TYPE
 
                     if stage <= 3:
@@ -317,7 +317,7 @@ else: # proceed with alternative pipeline mode
                         out_file = f'{out_dir}/{stage_info[out_suffix]}'
                         sh.write('gatk CombineGVCFs \\\n'+ # combine per-sample gVCF into multi-sample gVCF
                         f'-R {fasta_file} \\\n') # reference genome (fasta)
-                        for *_,(part,*_) in files_to_process: sh.write(f'-V {part} \\\n') # input (gVCF; raw SNPs/indel calls)
+                        for *_, (part,*_) in files_to_process: sh.write(f'-V {part} \\\n') # input (gVCF; raw SNPs/indel calls)
                         sh.write(f'-O {out_file} \n') # output (gVCF; combined)
                     
                     
@@ -353,7 +353,7 @@ else: # proceed with alternative pipeline mode
                         F1, F2, depth_per_site = [ f'{out_dir}/{suffix}' for suffix in stage_info[out_suffix] ]
                         sh.write('gatk SelectVariants \\\n'+ # select variant subset
                         f'-R {fasta_file} \\\n'+ # reference genome (fasta)
-                        f'-V {in_subdir}/{seq_file} \\\n'+ # input (gVCF; genotyped)
+                        f'-V {seq_file} \\\n'+ # input (gVCF; genotyped)
                         f'-O {F1} \\\n'+ # output (gVCF; filtered F1 biallelic)
                         '--select-type-to-exclude INDEL \\\n'+ # do not select insertion/deletion variants
                         '--select-type-to-exclude MIXED \\\n'+ # do not select mixed (combination of SNPs & insertion/deletion at single position) variant
