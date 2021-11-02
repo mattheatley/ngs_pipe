@@ -157,7 +157,7 @@ else: # proceed with alternative pipeline mode
                 assert(accompanied_by_indexes), 'Not all vcf files are accompanied by ".tbi" indexes.' # check index file (TBI) exists (i.e. previous stage completed)
 
             file_to_process, *_ = files_to_process = sorted([ (root, [ f'{root}/{name}' for name in files if name.endswith(stage_info[in_suffix]) ]) for root,files in identified_inputs ]) # filter relevant files 
-            
+
             if stage == 7: # genomic region to process
                 regions_info = [ (scaffold,length) for scaffold,length,*_ in [line.split('\t') for line in open(fai_file, 'r').readlines()] ] # extract scaffolds
                 regions_to_process = SplitRegions(region_list=regions_info) # group scaffolds into manageable parts (i.e. single scaffolds or groups of less than 50,000,000 bp)      
@@ -176,7 +176,7 @@ else: # proceed with alternative pipeline mode
             if indexing: tool, *_ = task.split(' ', 1) # extract software name from command
 
             elif stage != 6 and stage != 8: # not required for stages 6 & 8 nor indexing
-                *_, (*_, seq_file) = in_subdir, files = file_to_process if stage > 6 else task # specify input subdirectories & files
+                *_, (*_, seq_file) = in_subdir, task_files = file_to_process if stage > 6 else task # specify input subdirectories & files
 
                 if stage < 9:
                     sample = f'part{i:02}' if stage == 7 else os.path.basename(in_subdir) # specify sample
@@ -216,15 +216,15 @@ else: # proceed with alternative pipeline mode
 
                         raw_suffixes = '|'.join([ re.escape(suffix) for suffix in stage_info[in_suffix] ]) # specify regex search pattern
                         *_, P, U = S,  *PU  = ['S','P','U'] # specify read identifiers
-                        files_by_member = { member: [ name for name in files if re.search(f'_[R]?({member})[{P}]?({raw_suffixes})$', name) ] for member in [1,2] } # categorise by read pair member if present
+                        files_by_member = { member: [ name for name in task_files if re.search(f'_[R]?({member})[{P}]?({raw_suffixes})$', name) ] for member in [1,2] } # categorise by read pair member if present
                         
-                        all_reads_assigned_member = set(itertools.chain(*files_by_member.values())).issuperset(files) # establish if all reads belong to members
+                        all_reads_assigned_member = set(itertools.chain(*files_by_member.values())).issuperset(task_files) # establish if all reads belong to members
                         read_pairs_found = all(files_by_member.values()) and all_reads_assigned_member if stage == 1 else all(files_by_member.values()) # check that both members of read pair present & all reads allocated a member
 
                         read_type = paired if read_pairs_found else single
                         processing_mode[read_type].append(sample)
                         
-                        relevant_reads = files_by_member if read_pairs_found else {S: files}
+                        relevant_reads = files_by_member if read_pairs_found else {S: task_files}
 
                         sh.write(f'echo PROCESSING AS {read_type.upper()} END\n')
 
@@ -383,27 +383,27 @@ else: # proceed with alternative pipeline mode
                     
                     if stage == 10:
 
-                        F2, depth_per_site = sorted(extracted_info)
-                        mask, F3, F4 = out_suffix
-                        depth_input = open(f'{in_subdir}/{depth_per_site}', 'r').readlines()[1:]
+                        F2, depth_per_site = sorted(task_files)
+                        mask, F3, F4 = [ f'{out_dir}/{suffix}' for suffix in stage_info[out_suffix] ]
+                        depth_input = open(depth_per_site, 'r').readlines()[1:]
                         depths = [ int(line.split('\t')[2]) for line in depth_input ]
                         mean_depth = statistics.mean(depths) # calculate mean depth
                         cut_off = int(round(mean_depth * 1.6)) # # calculate upper limit N.B. JEXL expression value type must match VCF annotation field (i.e. DP = int)
                         sh.write('gatk SelectVariants \\\n'+ # select variant subset
                         f'-R {fasta_file} \\\n'+ # reference genome (fasta)
-                        f'-V {in_subdir}/{F2} \\\n'+ # input (gVCF; filtered F2 best practice)
-                        f'-O {out_dir}/{mask} \\\n'+ # output (gVCF; depth mask)
+                        f'-V {F2} \\\n'+ # input (gVCF; filtered F2 best practice)
+                        f'-O {mask} \\\n'+ # output (gVCF; depth mask)
                         f'--selectExpressions "DP < {cut_off}" \n'+ # select with depth of coverage < mean x 1.6
                         'gatk VariantFiltration \\\n'+ # filter variants based on info/format annotations
                         f'-R {fasta_file} \\\n'+ # reference genome (fasta)
-                        f'-V {in_subdir}/{F2} \\\n'+ # input (gVCF; filtered F2 best practice)
-                        f'-O {out_dir}/{F3} \\\n'+ # output (gVCF; filtered F3)
-                        f'--mask {out_dir}/{mask} \\\n'+ # input (gVCF; depth mask)
+                        f'-V {F2} \\\n'+ # input (gVCF; filtered F2 best practice)
+                        f'-O {F3} \\\n'+ # output (gVCF; filtered F3)
+                        f'--mask {mask} \\\n'+ # input (gVCF; depth mask)
                         '--filter-not-in-mask \n'+ # filter variants not in mask
                         'gatk SelectVariants \\\n'+ # select variant subset
                         f'-R {fasta_file} \\\n'+ # reference genome (fasta)
-                        f'-V {out_dir}/{F3} \\\n'+ # input (gVCF; filtered F3)
-                        f'-O {out_dir}/{F4} \\\n'+ # input (gVCF; filtered F4)
+                        f'-V {F3} \\\n'+ # input (gVCF; filtered F3)
+                        f'-O {F4} \\\n'+ # input (gVCF; filtered F4)
                         '--exclude-filtered true \n') # exclude sites marked as filtered
 
                 sh.write('echo TASK COMPLETED `date` \n') # log end time 
