@@ -48,6 +48,26 @@ if stage != 5 and ploidy: parser.error(f"the argument -x is not required for sta
 
 (pipe_flag, *_), *_ = [ info.option_strings for info in additional._group_actions ] # extract pipe flag
 
+
+
+def sort_via_L(name):
+    # extract non-overlapping lane references
+    Lx = re.findall('_L[0-9]+_', name)
+    # substitute no matches with zero
+    if not Lx:
+        L = '0'
+        print('Lane Reference Not Found in Fastq - files may not be concatenated in correct order')
+    # extract last lane reference match
+    else:
+        print(Lx)
+        *_, L = Lx
+
+    # remove non-integer text integers from lane reference
+    L = L.strip('L_')
+    
+    return int(L)
+
+
 def SplitRegions(region_list):
     if len(region_list) < 50: # when less than 50 scaffolds process each seperately
         grouped = [ [info] for info in region_list ]
@@ -234,6 +254,12 @@ else: # proceed with alternative pipeline mode
                         if stage == 1:
 
                             for label, reads in relevant_reads.items():
+                                
+                                # added to sort paired reads by lane
+                                if read_pairs_found:
+                                    
+                                    reads = sorted( reads, key=lambda name: sort_via_L(name) )
+
                                 in_reads = ' '.join(reads)
                                 out_reads = f'{out_subdir}/{sample}_{label}.{stage_info[out_suffix]}'
                                 sh.write(f'cat {in_reads} > {out_reads}\n') # merging seperate reads 
