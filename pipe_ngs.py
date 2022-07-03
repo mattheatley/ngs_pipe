@@ -56,7 +56,7 @@ def sort_via_L(name):
     # substitute no matches with zero
     if not Lx:
         L = '0'
-        print('Lane Reference Not Found in Fastq - files may not be concatenated in correct order')
+        print(f'Sequencing lane reference not found in {name} - files may not be concatenated in correct order')
     # extract last lane reference match
     else:
         print(Lx)
