@@ -65,7 +65,11 @@ def sort_via_L(name):
     # remove non-integer text integers from lane reference
     L = L.strip('L_')
     
-    return int(L)
+    #return int(L)
+    # added 'name' to return so reads are sorts by both (i) Lx & (ii) name
+    # previously if reads were only partially sorted by Lx whilst retain original order elsewhere
+    # caused problems in finding pairs
+    return int(L), name
 
 
 def SplitRegions(region_list):
